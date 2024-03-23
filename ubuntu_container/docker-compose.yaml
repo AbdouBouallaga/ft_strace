@@ -10,7 +10,8 @@ services:
       - "42:22"
     network_mode: bridge 
     volumes:
-      - ../:/app/data
+      - ../:/root/workspace
+    working_dir: /root/workspace
     command: 
      - bash
      - -c
