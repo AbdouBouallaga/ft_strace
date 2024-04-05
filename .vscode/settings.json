@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "syscall.h": "c",
+        "ft_strace.h": "c",
+        "unistd.h": "c",
+        "ptrace.h": "c",
+        "types.h": "c",
+        "features.h": "c"
+    }
+}

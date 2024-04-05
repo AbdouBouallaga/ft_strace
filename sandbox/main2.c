@@ -8,8 +8,8 @@
 //   _exit(0);
 // }
 
-int main(int argc, char *argv[]) {
-  int num = 2;
+int main() {
+  // int num = 2;
   // signal(SIGSTOP, sigstop_handler); // Register SIGSTOP handler
   // write(STDOUT_FILENO, "12345\n", 6);
   // int fd = open(__FILE__, O_RDONLY);
@@ -22,7 +22,8 @@ int main(int argc, char *argv[]) {
     // num = num + 2;
     // sleep(1);
     // printf("num = %d\n", num);
-    write(1, "\n", 1);
+    // sleep(5);
+    write(1, "hello\n", 6);
   // }
-  return(0);
+  return(1);
 }
