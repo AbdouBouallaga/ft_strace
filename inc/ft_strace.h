@@ -23,6 +23,7 @@ typedef struct	syscall_s {
 	int number;
     char *name;
 	int args_count;
+	int[6] = type;
 }				syscall_t;
 
 # define INT				1
