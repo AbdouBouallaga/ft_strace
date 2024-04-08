@@ -31,5 +31,5 @@ re: fclean all
 
 test: all
 	clear
-	gcc -o sandbox/a.out ./sandbox/main2.c
-	./ft_strace sandbox/a.out
+	gcc -g -o sandbox/a.out ./sandbox/main2.c
+	sudo ./ft_strace sandbox/a.out
