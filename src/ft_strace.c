@@ -6,15 +6,45 @@ const syscall_t			syscallsTab[] = X64_SYSCALLS_LIST;
 int num_syscalls = 461;
 char *get_syscall_name(int syscall_number, struct user_regs_struct regs) {
     int offset = 0;
+    int argId = 0;
     for (int i = 0; i < num_syscalls; i++) {
         if (syscallsTab[i].number == syscall_number) {
             printf("%s(", syscallsTab[i].name);
             for (int j = 0; j < syscallsTab[i].args_count; j++){
-                printf("%lld", *(&regs.rdi-offset));
+                argId =  *(&(syscallsTab[i].argI)+offset);
+                // printf("%p", (&regs.rdi-offset));
+                // if (argId == 0){
+                //     printf("%p", *(&regs.rdi-offset));
+                // } else if (argId == 1){
+                //     printf("%d", *(&regs.rdi-offset));
+                // } else if (argId == 2){
+                //     printf("%ld", *(&regs.rdi-offset));
+                // } else if (argId == 3){
+                //     // printf("%lu", *(&regs.rdi-offset));
+                // } else if (argId == 4){
+                //     // printf("%u", *(&regs.rdi-offset));
+                // } else 
+                char *p = (&regs.rdi-offset);
+                if (argId == 5){
+                    printf("%s", p);
+                }
+                // } else if (argId == 6){
+                //     // printf("%lu", *(&regs.rdi-offset));
+                // } else {
+                //     printf("%u", *(&regs.rdi-offset));
+                // }
+                    
+
+
+
+                // } else if (syscallsTab[i].types[i] == 6){
+                //     printf("%zu", *(&regs.rdi-offset));
+                // }
                 offset++;
                 if (j+1 < syscallsTab[i].args_count)
                     printf(",");
             }
+            printf("\ndebug\nRDI = %p\nRSI = %p\nRDX = %p\n", &regs.rdi,&regs.rsi,&regs.rdx);
             return syscallsTab[i].name;
         }
     }
@@ -25,7 +55,6 @@ int ft_strace(char **argv)
 {
     int pid;
     int status = 999;
-    int waitret = 1;
     // siginfo_t siginfo;
     struct iovec iov;
     struct user_regs_struct regs;
@@ -60,9 +89,12 @@ int ft_strace(char **argv)
         }
         ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_TRACESYSGOOD); // ha zayda ?
         while(1){
-            waitForRet:
+            waitForSyscallExitStop:
             waitpid(-1, &status, 0);
 
+            // if (ptrace(PTRACE_GETSIGINFO, pid, NT_PRSTATUS, &iov) == -1){
+
+            // }
             if (WIFSIGNALED(status)){
                 printf("killed by signal %s\n", strsignal(WTERMSIG(status)));
                 return (1);
@@ -79,33 +111,14 @@ int ft_strace(char **argv)
                 printf("error: %s\nfunction %s line %d\n",strerror(errno), __FUNCTION__, __LINE__-1);
                 perror("ptrace");
             }
-            if (waitret){
-                waitret = 0;
-                // printf("waitret RAX: %d\n", regs.rax);
+            if (regs.rax == -ENOSYS){
+                printf("====>  %lu\n", regs.rax);
                 ptrace(PTRACE_SYSCALL, pid, 0, 0);
-                goto waitForRet;
+                goto waitForSyscallExitStop;
             }
-            // printf("RIP: 0x%llx\n", iov);
-            // printf("RIP: %llx\n", regs.rip);
-            // printf("len of iov = %zu\n", iov.iov_len);
-            // printf("%lX\n", regs.rip );
-            
-        
             get_syscall_name(regs.orig_rax, regs);
             printf(") =  %d\n", regs.rax);
-
-
-            // printf("RDI: %llx\n", regs.rdi);
-            // printf("EBX: %llx\n", regs.rbx);
-            // printf("ECX: %llx\n", regs.rcx);
-            // printf("RBX: %016llx (%llx)\n", regs.rbx, regs.rbx);
-
-            // bzero(&regs, sizeof(struct user_regs_struct));
-            status = 999;
             ptrace(PTRACE_SYSCALL, pid, 0, 0);
-            // sleep(0.1);
-            // printf("\n");
-            waitret = 0;
         }
         return (1);
     }

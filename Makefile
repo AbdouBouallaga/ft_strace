@@ -2,7 +2,7 @@ NAME = ft_strace
 SRC = ./src/ft_strace.c
 OBJ	= $(SRC:.c=.o)
 # CFLAGS	= -Wall -Wextra -Werror
-CFLAGS	= -Wno-coverage-mismatch
+# CFLAGS	= -Wno-coverage-mismatch
 P_HEADER = ./inc/ft_strace.h
 # FT_LIB = ./libft/libft.a
 FT_LIB =
