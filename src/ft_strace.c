@@ -7,12 +7,12 @@ int num_syscalls = 461;
 char *get_syscall_name(int syscall_number, struct user_regs_struct regs) {
     int offset = 0;
     int argId = 0;
+    void **p;
     for (int i = 0; i < num_syscalls; i++) {
         if (syscallsTab[i].number == syscall_number) {
             printf("%s(", syscallsTab[i].name);
             for (int j = 0; j < syscallsTab[i].args_count; j++){
                 argId =  *(&(syscallsTab[i].argI)+offset);
-                // printf("%p", (&regs.rdi-offset));
                 // if (argId == 0){
                 //     printf("%p", *(&regs.rdi-offset));
                 // } else if (argId == 1){
@@ -24,10 +24,17 @@ char *get_syscall_name(int syscall_number, struct user_regs_struct regs) {
                 // } else if (argId == 4){
                 //     // printf("%u", *(&regs.rdi-offset));
                 // } else 
-                char *p = (&regs.rdi-offset);
-                if (argId == 5){
-                    printf("%s", p);
-                }
+                // char *p = (&regs.rdi-offset);
+                // if (argId == 5){
+                    // unsigned long long *tmp = regs.rsi;
+                    // printf("%s\n", tmp);
+                    // *p = tmp;
+                    // *p = regs.rsi;
+                    // printf("%p\n", p);
+                    // printf("\n");
+                // } else {
+                    printf("%p", *(&regs.rdi-offset));
+                // }
                 // } else if (argId == 6){
                 //     // printf("%lu", *(&regs.rdi-offset));
                 // } else {
@@ -44,7 +51,7 @@ char *get_syscall_name(int syscall_number, struct user_regs_struct regs) {
                 if (j+1 < syscallsTab[i].args_count)
                     printf(",");
             }
-            printf("\ndebug\nRDI = %p\nRSI = %p\nRDX = %p\n", &regs.rdi,&regs.rsi,&regs.rdx);
+            // printf("\ndebug\nRDI = %p\nRSI = %p\nRDX = %p\n", &regs.rdi,&regs.rsi,&regs.rdx);
             return syscallsTab[i].name;
         }
     }
@@ -112,7 +119,7 @@ int ft_strace(char **argv)
                 perror("ptrace");
             }
             if (regs.rax == -ENOSYS){
-                printf("====>  %lu\n", regs.rax);
+                // printf("====>  %lu\n", regs.rax);
                 ptrace(PTRACE_SYSCALL, pid, 0, 0);
                 goto waitForSyscallExitStop;
             }

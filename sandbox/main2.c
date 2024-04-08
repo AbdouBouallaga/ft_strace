@@ -23,7 +23,7 @@ int main() {
     // sleep(1);
     // printf("num = %d\n", num);
     // sleep(5);
-    write(1, "hellohellohellohellohellohellohellohellohellohellohellohellohellohellolllllll\n", 78);
+    write(1, "ht\n", 3);
   // }
   return(1);
 }
