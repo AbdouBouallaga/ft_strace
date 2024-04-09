@@ -7,13 +7,27 @@ s_script = <<-SHELL
 
 Vagrant.configure('2') do |config|
   (1..1).each do |i|
-  config.vm.define "host" do |machine|
-    machine.vm.box = 'ubuntu/focal64'
+  config.vm.define "host32" do |machine|
+    # machine.vm.box = 'ubuntu/trusty64'
+    machine.vm.box = 'ubuntu/trusty32'
     machine.vm.hostname = "host"
     machine.vm.network :private_network, ip: "192.168.56.110"
     machine.vm.provision "file", source: ".", destination: "/home/vagrant/ft_strace"
     machine.vm.provider "virtualbox" do |vb|
-      # vb.name = "ft_strace-#{i}"
+      vb.name = "ft_strace-32"
+      vb.cpus = '4'
+      vb.memory = '1024'
+    end
+    machine.vm.provision "shell", inline: s_script
+  end
+  config.vm.define "host64" do |machine|
+    machine.vm.box = 'ubuntu/trusty64'
+    # machine.vm.box = 'ubuntu/trusty32'
+    machine.vm.hostname = "host"
+    machine.vm.network :private_network, ip: "192.168.56.111"
+    machine.vm.provision "file", source: ".", destination: "/home/vagrant/ft_strace"
+    machine.vm.provider "virtualbox" do |vb|
+      vb.name = "ft_strace-64"
       vb.cpus = '4'
       vb.memory = '1024'
     end

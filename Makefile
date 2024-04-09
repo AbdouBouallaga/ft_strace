@@ -29,7 +29,7 @@ fclean: clean
 
 re: fclean all
 
-test: all
+test: re
 	clear
 	gcc -g -o sandbox/a.out ./sandbox/main2.c
 	sudo ./ft_strace sandbox/a.out
