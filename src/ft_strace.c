@@ -1,18 +1,17 @@
 #include "../inc/ft_strace.h"
 
-int total = 0;
-int debug_count = 10;
 const syscall_t			syscallsTab[] = X64_SYSCALLS_LIST;
 int num_syscalls = 461;
+int pid;
 
-void initstructs(){
-
+void handle_sig(){
+    printf("Signal handler kill the child pid %d\n", pid);
+    ptrace(PTRACE_INTERRUPT, pid, NULL, NULL);
 }
 
 char *get_syscall_name(int syscall_number, struct user_regs_struct regs) {
     int offset = 0;
     int argId = 0;
-    initstructs();
     for (int i = 0; i < num_syscalls; i++) {
         if (syscallsTab[i].number == syscall_number) {
             printf("%s(", syscallsTab[i].name);
@@ -48,11 +47,11 @@ char *get_syscall_name(int syscall_number, struct user_regs_struct regs) {
 
 int ft_strace(char **argv)
 {
-    int pid;
+    
     int status = 999;
     struct iovec iov;
     struct user_regs_struct regs;
-    struct user_regs_struct regsCopy; //get a copy at syscall-enter-stop
+    int traceret = 999;
 
     struct utsname buf;
     if (uname(&buf) == -1) {
@@ -72,31 +71,26 @@ int ft_strace(char **argv)
         raise(SIGCHLD);
         if (execvp(argv[0], argv) == -1){
             printf("error: %s\nfunction %s line %d\n",strerror(errno), __FUNCTION__, __LINE__-1);
-            signal();
+            // signal();
         }
         return(0);
     }
     else{
         printf("pid: %d\n", pid);
-        if(ptrace(PTRACE_SEIZE, pid, NULL, NULL) == -1){
+        traceret = ptrace(PTRACE_SEIZE, pid, NULL, NULL);
+        if(traceret == -1){
             printf("error: %s\nfunction %s line %d\n",strerror(errno), __FUNCTION__, __LINE__-1);
             return(-1);
         }
+        printf("traceret === %d\n", traceret);
         // ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_TRACESYSGOOD); // ha zayda ?
         while(1){
             waitForSyscallExitStop:
             waitpid(-1, &status, 0);
 
-            if (WIFSIGNALED(status)){
-                printf("killed by signal %s\n", strsignal(WTERMSIG(status)));
+            if (!WIFSTOPPED(status)){
+                printf("Exit, status=%s\n", strsignal(WEXITSTATUS(status)));
                 return (1);
-            } else if (WIFEXITED(status)){
-                printf("exited, status=%s\n", strsignal(WEXITSTATUS(status)));
-                printf("total halts %d\n", total/2);
-                return (1);
-            } else if (WIFSTOPPED(status)){
-                total++;
-                // printf("stopped by signal %s\n", strsignal(WSTOPSIG(status)));
             }
             bzero(&regs, sizeof(struct user_regs_struct));
             if (ptrace(PTRACE_GETREGSET, pid, NT_PRSTATUS, &iov) == -1){
@@ -122,6 +116,11 @@ int main(int argc, char **argv)
     // must add signals handler, and kill the child process before closing this one with PTRACE_INTERRUPT
     if (argc < 2)
         return (printf("Usage: ./ft_strace <command> [args]\n"));
+    signal(SIGHUP, handle_sig); 
+    signal(SIGINT, handle_sig); 
+    signal(SIGQUIT, handle_sig); 
+    signal(SIGILL, handle_sig); 
+    signal(SIGABRT, handle_sig); 
     if (ft_strace(argv + 1) == -1)
         return (printf("ft_strace: error: failed to trace\n"));
     return (0);
