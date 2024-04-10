@@ -7,19 +7,30 @@ int num_syscalls = 461;
 int pid;
 
 void handle_sig(int sig){
-    printf("Signal handler kill the child pid %d, sig = %d\n", pid, sig);
     ptrace(PTRACE_INTERRUPT, pid, NULL, NULL);
+    printf("Signal handler kill the child pid %d, sig = %d\n", pid, sig);
     exit(0);
 }
 
-char *get_syscall_name(int syscall_number, unsigned long *regs) {
+char *get_syscall_name(int syscall_number){
+    int i = 0;
+    int j = 0;
+    while(i < num_syscalls){
+        if (syscallsTab[i].number == syscall_number) {
+            return(syscallsTab[i].name);
+        }
+        i++;
+    }
+}
+
+int get_arg_ret(int syscall_number, unsigned long *regs) {
     int offset = 0;
     int argId = 0;
     int i = 0;
     int j = 0;
     while(i < num_syscalls){
         if (syscallsTab[i].number == syscall_number) {
-            printf("%s(", syscallsTab[i].name);
+            // printf("%s(", get_syscall_name(syscall_number));
             while(j < syscallsTab[i].args_count){
                 argId =  *(&(syscallsTab[i].argI)+j);
                 if (argId == 0){
@@ -45,11 +56,11 @@ char *get_syscall_name(int syscall_number, unsigned long *regs) {
                     printf(",");
                 j++;
             }
-            return syscallsTab[i].name;
+            return(1);
         }
         i++;
     }
-    return NULL;
+    return(0);
 }
 
 int ft_strace(char **argv)
@@ -60,6 +71,7 @@ int ft_strace(char **argv)
     struct user_regs_struct_template regs;
     void *regshead = NULL;
     int traceret = 999;
+    char *fname;
 
     struct utsname buf;
     if (uname(&buf) == -1) {
@@ -121,12 +133,16 @@ int ft_strace(char **argv)
             }
             // memcpy(&regsCopy, &regs, sizeof(struct user_regs_struct_template));
             if ((*(unsigned long *)(regshead+r_off.rax)) == -ENOSYS){
+                fname = get_syscall_name(*(int *)(regshead+r_off.orig_rax));
+                write(1, fname, strlen(fname));
+                write(1, "( ", 2);
                 ptrace(PTRACE_SYSCALL, pid, 0, 0);
                 goto waitForSyscallExitStop;
             }
-            get_syscall_name(*(int *)(regshead+r_off.orig_rax), (unsigned long *)(regshead+r_off.rdi));
+            if(get_arg_ret(*(int *)(regshead+r_off.orig_rax), (unsigned long *)(regshead+r_off.rdi))){
+                printf(") =  %d\n", *(int *)(regshead+r_off.rax));
+            }
             
-            printf(") =  %d\n", *(int *)(regshead+r_off.rax));
             // printf(")RAX =  %p\n", (regshead+r_off.rax));
             // printf(")RAX =  %p\n", (&regs.rax));
             // printf(")RDI =  %p\n", (regshead+r_off.rdi));
