@@ -75,7 +75,7 @@ struct user_regs_struct_template
   unsigned long es;
   unsigned long fs;
   unsigned long gs;
-};
+} ;
 
 // struct user_regs_struct
 // {

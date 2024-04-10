@@ -10,7 +10,7 @@ void handle_sig(int sig){
     exit(0);
 }
 
-char *get_syscall_name(int syscall_number, struct user_regs_struct_template regs) {
+char *get_syscall_name(int syscall_number, unsigned long *regs) {
     int offset = 0;
     int argId = 0;
     int i = 0;
@@ -20,22 +20,23 @@ char *get_syscall_name(int syscall_number, struct user_regs_struct_template regs
             printf("%s(", syscallsTab[i].name);
             while(j < syscallsTab[i].args_count){
                 argId =  *(&(syscallsTab[i].argI)+offset);
+                // printf("reg at: %p", (regs-offset));
                 if (argId == 0){
-                    printf("Pointer to: %p", (&regs.rdi-offset));
+                    printf("Pointer to: %p", *(regs-offset));
                 } else if (argId == 1){
-                    printf("%d", (int)*(&regs.rdi-offset));
+                    printf("%d", *(int*)(regs-offset));
                 } else if (argId == 2){
-                    printf("%ld", (long int)*(&regs.rdi-offset));
+                    printf("%ld", *(long int*)(regs-offset));
                 } else if (argId == 3){
-                    printf("%lu", (long unsigned int)*(&regs.rdi-offset));
+                    printf("%lu", *(long unsigned int*)(regs-offset));
                 } else if (argId == 4){
-                    printf("%u", (unsigned int)*(&regs.rdi-offset));
+                    printf("%u", *(unsigned int *)(regs-offset));
                 } else if (argId == 5){
-                    printf("String at: %p", (&regs.rdi-offset));
+                    printf("String at: %p", (regs-offset));
                 } else if (argId == 6){
-                    printf("%lu", (long unsigned int)*(&regs.rdi-offset));
+                    printf("%lu", *(int *)(regs-offset));
                 } else {
-                    printf("%u", (unsigned int)*(&regs.rdi-offset));
+                    printf("%u", *(unsigned int *)(regs-offset));
                 }
 
                 offset++;
@@ -54,10 +55,11 @@ char *get_syscall_name(int syscall_number, struct user_regs_struct_template regs
 
 int ft_strace(char **argv)
 {
-    struct regs_offset regs_offset;
+    struct regs_offset r_off; //r_off
     int status = 999;
     struct iovec iov;
     struct user_regs_struct_template regs;
+    void *regshead = NULL;
     int traceret = 999;
 
     struct utsname buf;
@@ -65,16 +67,22 @@ int ft_strace(char **argv)
         perror("uname");
         return 1;
     }
-    printf("Machine architecture: %s\n", buf.machine);
-    if (!strcmp(buf.machine, "x86_64")){
-        regs_offset.rax = sizeof(unsigned long) * 1;
-    } else {
-        regs_offset.rax = 6;
-    }
     
     iov.iov_base = &regs;
     iov.iov_len = sizeof(regs);
 
+    printf("Machine architecture: %s\n", buf.machine);
+    regshead = &regs.r15;
+    if (!strcmp(buf.machine, "x86_64")){
+        r_off.rax = sizeof(unsigned long)*10;
+        r_off.rdi = sizeof(unsigned long)*14;
+        r_off.orig_rax = sizeof(unsigned long)*15;
+    } else {
+        r_off.rax = sizeof(long int)*6;
+        r_off.rdi = sizeof(long int)*4;
+        r_off.orig_rax = sizeof(long int)*11;
+
+    }
     pid = fork();
     if (pid == -1)
         return (-1);
@@ -111,15 +119,19 @@ int ft_strace(char **argv)
                 perror("ptrace");
             }
             // memcpy(&regsCopy, &regs, sizeof(struct user_regs_struct_template));
-            if (regs.rax == -ENOSYS){
+            if ((*(unsigned long *)(regshead+r_off.rax)) == -ENOSYS){
                 ptrace(PTRACE_SYSCALL, pid, 0, 0);
                 goto waitForSyscallExitStop;
             }
-            get_syscall_name(regs.orig_rax, regs);
-            printf(") =  %p\n", (&regs+regs_offset.rax));
-            printf(") =  %p\n", (&regs.r15));
-            printf(") =  %p\n", (&regs.r14));
-            printf(") =  %p\n", (&regs.rax));
+            get_syscall_name(*(int *)(regshead+r_off.orig_rax), (unsigned long *)(regshead+r_off.rdi));
+            
+            printf(") =  %d\n", *(int *)(regshead+r_off.rax));
+            printf(")RAX =  %p\n", (regshead+r_off.rax));
+            printf(")RAX =  %p\n", (&regs.rax));
+            printf(")RDI =  %p\n", (regshead+r_off.rdi));
+            printf(")RDI =  %p\n", (&regs.rdi));
+            printf(")RDX =  %p\n", (&regs.rdx));
+            printf(")RCX =  %p\n", (&regs.rcx));
             ptrace(PTRACE_SYSCALL, pid, 0, 0);
         }
         return (1);
