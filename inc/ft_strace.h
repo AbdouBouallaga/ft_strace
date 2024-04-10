@@ -1,7 +1,7 @@
 #ifndef FT_STRACE_H
 #define FT_STRACE_H
 
-#include "./x64_syscalls.h"
+#include "./syscalls.h"
 #include <stdio.h>
 #include <string.h> //strerror
 #include <sys/types.h>

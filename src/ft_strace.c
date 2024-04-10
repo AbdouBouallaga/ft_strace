@@ -1,6 +1,8 @@
 #include "../inc/ft_strace.h"
 
-const syscall_t			syscallsTab[] = X64_SYSCALLS_LIST;
+const syscall_t			syscallsTab64[] = X64_SYSCALLS_LIST;
+const syscall_t			syscallsTab32[] = X32_SYSCALLS_LIST;
+const syscall_t			*syscallsTab;
 int num_syscalls = 461;
 int pid;
 
@@ -19,10 +21,9 @@ char *get_syscall_name(int syscall_number, unsigned long *regs) {
         if (syscallsTab[i].number == syscall_number) {
             printf("%s(", syscallsTab[i].name);
             while(j < syscallsTab[i].args_count){
-                argId =  *(&(syscallsTab[i].argI)+offset);
-                // printf("reg at: %p", (regs-offset));
+                argId =  *(&(syscallsTab[i].argI)+j);
                 if (argId == 0){
-                    printf("Pointer to: %p", *(regs-offset));
+                    printf("Pointer to: %p", (unsigned long *)*(regs-offset));
                 } else if (argId == 1){
                     printf("%d", *(int*)(regs-offset));
                 } else if (argId == 2){
@@ -34,9 +35,7 @@ char *get_syscall_name(int syscall_number, unsigned long *regs) {
                 } else if (argId == 5){
                     printf("String at: %p", (regs-offset));
                 } else if (argId == 6){
-                    printf("%lu", *(int *)(regs-offset));
-                } else {
-                    printf("%u", *(unsigned int *)(regs-offset));
+                    printf("%lu", *(long unsigned int *)(regs-offset));
                 }
 
                 offset++;
@@ -74,10 +73,12 @@ int ft_strace(char **argv)
     printf("Machine architecture: %s\n", buf.machine);
     regshead = &regs.r15;
     if (!strcmp(buf.machine, "x86_64")){
+        syscallsTab = syscallsTab64;
         r_off.rax = sizeof(unsigned long)*10;
         r_off.rdi = sizeof(unsigned long)*14;
         r_off.orig_rax = sizeof(unsigned long)*15;
     } else {
+        syscallsTab = syscallsTab32;
         r_off.rax = sizeof(long int)*6;
         r_off.rdi = sizeof(long int)*4;
         r_off.orig_rax = sizeof(long int)*11;
@@ -126,12 +127,12 @@ int ft_strace(char **argv)
             get_syscall_name(*(int *)(regshead+r_off.orig_rax), (unsigned long *)(regshead+r_off.rdi));
             
             printf(") =  %d\n", *(int *)(regshead+r_off.rax));
-            printf(")RAX =  %p\n", (regshead+r_off.rax));
-            printf(")RAX =  %p\n", (&regs.rax));
-            printf(")RDI =  %p\n", (regshead+r_off.rdi));
-            printf(")RDI =  %p\n", (&regs.rdi));
-            printf(")RDX =  %p\n", (&regs.rdx));
-            printf(")RCX =  %p\n", (&regs.rcx));
+            // printf(")RAX =  %p\n", (regshead+r_off.rax));
+            // printf(")RAX =  %p\n", (&regs.rax));
+            // printf(")RDI =  %p\n", (regshead+r_off.rdi));
+            // printf(")RDI =  %p\n", (&regs.rdi));
+            // printf(")RDX =  %p\n", (&regs.rdx));
+            // printf(")RCX =  %p\n", (&regs.rcx));
             ptrace(PTRACE_SYSCALL, pid, 0, 0);
         }
         return (1);
