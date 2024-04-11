@@ -8,8 +8,7 @@ s_script = <<-SHELL
 Vagrant.configure('2') do |config|
   (1..1).each do |i|
   config.vm.define "host32" do |machine|
-    # machine.vm.box = 'ubuntu/trusty64'
-    machine.vm.box = 'ubuntu/trusty32'
+    machine.vm.box = "bento/ubuntu-16.04-i386"
     machine.vm.hostname = "host"
     machine.vm.network :private_network, ip: "192.168.56.110"
     machine.vm.provision "file", source: ".", destination: "/home/vagrant/ft_strace"
@@ -21,8 +20,7 @@ Vagrant.configure('2') do |config|
     machine.vm.provision "shell", inline: s_script
   end
   config.vm.define "host64" do |machine|
-    machine.vm.box = 'ubuntu/trusty64'
-    # machine.vm.box = 'ubuntu/trusty32'
+    machine.vm.box = "bento/ubuntu-16.04"
     machine.vm.hostname = "host"
     machine.vm.network :private_network, ip: "192.168.56.111"
     machine.vm.provision "file", source: ".", destination: "/home/vagrant/ft_strace"

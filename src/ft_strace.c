@@ -8,29 +8,31 @@ int pid;
 
 void handle_sig(int sig){
     ptrace(PTRACE_INTERRUPT, pid, NULL, NULL);
+    kill(pid, SIGKILL);
     printf("Signal handler kill the child pid %d, sig = %d\n", pid, sig);
     exit(0);
 }
 
-char *get_syscall_name(int syscall_number){
+int check_syscall_name(int syscall_number){
     int i = 0;
     int j = 0;
     while(i < num_syscalls){
         if (syscallsTab[i].number == syscall_number) {
-            return(syscallsTab[i].name);
+            return(1);
         }
         i++;
     }
+    return (0);
 }
 
-int get_arg_ret(int syscall_number, unsigned long *regs) {
+int get_syscallname_arg(int syscall_number, unsigned long *regs) {
     int offset = 0;
     int argId = 0;
     int i = 0;
     int j = 0;
     while(i < num_syscalls){
         if (syscallsTab[i].number == syscall_number) {
-            // printf("%s(", get_syscall_name(syscall_number));
+            printf("%s(", syscallsTab[i].name);
             while(j < syscallsTab[i].args_count){
                 argId =  *(&(syscallsTab[i].argI)+j);
                 if (argId == 0){
@@ -103,10 +105,8 @@ int ft_strace(char **argv)
     {
         raise(SIGCHLD);
         if (execvp(argv[0], argv) == -1){
-            // printf("error: %s\nfunction %s line %d\n",strerror(errno), __FUNCTION__, __LINE__-1);
             printf("error: %s\n",strerror(errno));
             raise(SIGHUP);
-            // signal();
         }
         return(0);
     }
@@ -117,7 +117,7 @@ int ft_strace(char **argv)
             return(-1);
         }
         printf("traceret === %d\n", traceret);
-        // ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_TRACESYSGOOD); // ha zayda ?
+        ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_TRACESYSGOOD);
         while(1){
             waitForSyscallExitStop:
             waitpid(-1, &status, 0);
@@ -131,24 +131,14 @@ int ft_strace(char **argv)
                 printf("error: %s\nfunction %s line %d\n",strerror(errno), __FUNCTION__, __LINE__-1);
                 perror("ptrace");
             }
-            // memcpy(&regsCopy, &regs, sizeof(struct user_regs_struct_template));
             if ((*(unsigned long *)(regshead+r_off.rax)) == -ENOSYS){
-                fname = get_syscall_name(*(int *)(regshead+r_off.orig_rax));
-                write(1, fname, strlen(fname));
-                write(1, "( ", 2);
                 ptrace(PTRACE_SYSCALL, pid, 0, 0);
                 goto waitForSyscallExitStop;
             }
-            if(get_arg_ret(*(int *)(regshead+r_off.orig_rax), (unsigned long *)(regshead+r_off.rdi))){
+            get_syscallname_arg(*(int *)(regshead+r_off.orig_rax), (unsigned long *)(regshead+r_off.rdi));
+            if(check_syscall_name(*(int *)(regshead+r_off.orig_rax))){
                 printf(") =  %d\n", *(int *)(regshead+r_off.rax));
             }
-            
-            // printf(")RAX =  %p\n", (regshead+r_off.rax));
-            // printf(")RAX =  %p\n", (&regs.rax));
-            // printf(")RDI =  %p\n", (regshead+r_off.rdi));
-            // printf(")RDI =  %p\n", (&regs.rdi));
-            // printf(")RDX =  %p\n", (&regs.rdx));
-            // printf(")RCX =  %p\n", (&regs.rcx));
             ptrace(PTRACE_SYSCALL, pid, 0, 0);
         }
         return (1);
@@ -165,10 +155,8 @@ void setup_signals_handler(){
     }
 }
 
-
 int main(int argc, char **argv)
 {
-    // must add signals handler, and kill the child process before closing this one with PTRACE_INTERRUPT
     if (argc < 2)
         return (printf("Usage: ./ft_strace <command> [args]\n"));
     setup_signals_handler();
