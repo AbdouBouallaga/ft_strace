@@ -15,7 +15,6 @@ void handle_sig(int sig){
 
 int check_syscall_name(int syscall_number){
     int i = 0;
-    int j = 0;
     while(i < num_syscalls){
         if (syscallsTab[i].number == syscall_number) {
             return(1);
@@ -73,7 +72,6 @@ int ft_strace(char **argv)
     struct user_regs_struct_template regs;
     void *regshead = NULL;
     int traceret = 999;
-    char *fname;
 
     struct utsname buf;
     if (uname(&buf) == -1) {
@@ -131,7 +129,7 @@ int ft_strace(char **argv)
                 printf("error: %s\nfunction %s line %d\n",strerror(errno), __FUNCTION__, __LINE__-1);
                 perror("ptrace");
             }
-            if ((*(unsigned long *)(regshead+r_off.rax)) == -ENOSYS){
+            if ((*( long *)(regshead+r_off.rax)) == -ENOSYS){
                 ptrace(PTRACE_SYSCALL, pid, 0, 0);
                 goto waitForSyscallExitStop;
             }
